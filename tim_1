@@ -1,0 +1,93 @@
+setwd("~/assignments/biogeo_practicum/flux_data")    #set working directory
+
+umb<-read.csv("umb_10-1.csv", sep=",", header=T, colClasses=c(rep('character',38)))
+
+#all_content<-readLines('AMF_US-UMB_BASE_HH_10-1.csv')
+#skip2<-all_content[c(-1,-2)]
+#ho1<-read.csv(textConnection(skip2),header=T,stringsAsFactors=FALSE)
+
+
+#set up time so it's easier to subset and determine days
+#maybe use lubridate
+umb$YEAR_START<-sub('^(\\d{4}).*$',"\\1",umb$TIMESTAMP_START)
+umb$YEAR_END<-sub('^(\\d{4}).*$',"\\1",umb$TIMESTAMP_END)
+umb$MONTH_START<-substr(umb$TIMESTAMP_START,5,6)
+umb$DAY_START<-substr(umb$TIMESTAMP_START,7,8)
+umb$TIME_START<-substr(umb$TIMESTAMP_START,9,12)
+umb$MONTH_END<-substr(umb$TIMESTAMP_END,5,6)
+umb$DAY_END<-substr(umb$TIMESTAMP_END,7,8)
+umb$TIME_END<-substr(umb$TIMESTAMP_END,9,12)
+
+#subset to get June, July, August #Months 6,7,8
+umb.grow<-subset(umb,MONTH_START=='06'|MONTH_START=='07'|MONTH_START=='08')
+
+#subset to get swrad>20 for daylight
+umb.grow.day<-subset(umb.grow,SW_IN>20)
+
+#eliminate absent data #-9999 values of NEE
+umb.grow.day.NEE<-subset(umb.grow.day,NEE_PI!=-9999)
+
+#eliminate absent data #-9999 values of LE
+umb.grow.day.NEE.LE<-subset(umb.grow.day.NEE,LE!=-9999)
+
+#convert values to numeric
+umb.numeric<-sapply(umb.grow.day.NEE.LE,as.numeric)
+umb.numeric<-data.frame(umb.numeric)
+
+#find NEE/LE for WUE
+umb.numeric$WUE<-umb.numeric$NEE_PI / umb.numeric$LE
+
+####dirtily separate out the years for averages
+
+#create separate years
+umb.07<-subset(umb.numeric,YEAR_START==2007)
+umb.08<-subset(umb.numeric,YEAR_START==2008)
+umb.09<-subset(umb.numeric,YEAR_START==2009)
+umb.10<-subset(umb.numeric,YEAR_START==2010)
+umb.11<-subset(umb.numeric,YEAR_START==2011)
+umb.12<-subset(umb.numeric,YEAR_START==2012)
+umb.13<-subset(umb.numeric,YEAR_START==2013)
+umb.14<-subset(umb.numeric,YEAR_START==2014)
+
+#find yearly averages
+WUE.mean.yearly<-c(mean(umb.07$WUE,trim=.02),mean(umb.08$WUE,trim=.02),mean(umb.09$WUE,trim=.02),
+                   mean(umb.10$WUE,trim=.02),mean(umb.11$WUE,trim=.02),mean(umb.12$WUE,trim=.02),
+                   mean(umb.13$WUE,trim=.02),mean(umb.14$WUE,trim=.02))
+
+NEE_PI.mean.yearly<-c(mean(umb.07$NEE_PI,trim=.02),mean(umb.08$NEE_PI,trim=.02),mean(umb.09$NEE_PI,trim=.02),
+                   mean(umb.10$NEE_PI,trim=.02),mean(umb.11$NEE_PI,trim=.02),mean(umb.12$NEE_PI,trim=.02),
+                   mean(umb.13$NEE_PI,trim=.02),mean(umb.14$NEE_PI,trim=.02))
+
+LE.mean.yearly<-c(mean(umb.07$LE,trim=.02),mean(umb.08$LE,trim=.02),mean(umb.09$LE,trim=.02),
+                   mean(umb.10$LE,trim=.02),mean(umb.11$LE,trim=.02),mean(umb.12$LE,trim=.02),
+                   mean(umb.13$LE,trim=.02),mean(umb.14$LE,trim=.02))
+
+
+
+WUE.mean.yearly
+NEE_PI.mean.yearly
+WUE.yearly<-data.frame(WUE.mean.yearly)  #convert to dataframes
+NEE.yearly<-data.frame(NEE_PI.mean.yearly)
+LE.yearly<-data.frame(LE.mean.yearly)
+WUE.yearly$year<-c(2007,2008,2009,2010,2011,2012,2013,2014)    #add years to dataframe
+NEE.yearly$year<-c(2007,2008,2009,2010,2011,2012,2013,2014) 
+LE.yearly$year<-c(2007,2008,2009,2010,2011,2012,2013,2014) 
+
+
+#plot out yearly averages
+plot(WUE.yearly$year,WUE.yearly$WUE.mean.yearly)
+plot(NEE.yearly$year,NEE.yearly$NEE.mean.yearly)
+plot(LE.yearly$year,LE.yearly$LE.mean.yearly)
+
+###########################
+#Things this code does well:
+  #extracts day and year, doesn't do it as well as lubridate likely
+  #eliminates NA values for LE and NEE
+  #most of this could likely be done more elegantly
+  
+#Works mainly on one site, can easily be changed to work on other sites as well/changed to a function to be run over all sites
+  
+
+
+
+
